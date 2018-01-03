@@ -1,0 +1,54 @@
+﻿Build started 11-12-2017 12:35:04.
+     1>Project "C:\Users\sumit.dhyani\Documents\Visual Studio 2013\Projects\AlgoProblems\Maximum_Tip_Calculator\Maximum_Tip_Calculator.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Maximum_Tip_Calculator.cpp
+         Maximum_Tip_Calculator.cpp
+     1>c:\program files (x86)\microsoft visual studio 12.0\vc\include\xhash(30): error C2440: 'type cast' : cannot convert from 'const funcParams' to 'size_t'
+                 No user-defined-conversion operator available that can perform this conversion, or the operator cannot be called
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\xhash(111) : see reference to function template instantiation 'size_t stdext::hash_value<_Kty>(const _Kty &)' being compiled
+                 with
+                 [
+                     _Kty=funcParams
+                 ]
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\xhash(110) : while compiling class template member function 'size_t stdext::hash_compare<_Kty,std::less<_Kty>>::operator ()(const _Kty &) const'
+                 with
+                 [
+                     _Kty=funcParams
+                 ]
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\xhash(998) : see reference to function template instantiation 'size_t stdext::hash_compare<_Kty,std::less<_Kty>>::operator ()(const _Kty &) const' being compiled
+                 with
+                 [
+                     _Kty=funcParams
+                 ]
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\hash_map(30) : see reference to class template instantiation 'stdext::hash_compare<_Kty,std::less<_Kty>>' being compiled
+                 with
+                 [
+                     _Kty=funcParams
+                 ]
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\xhash(255) : see reference to class template instantiation 'stdext::_Hmap_traits<_Kty,_Ty,_Tr,_Alloc,false>' being compiled
+                 with
+                 [
+                     _Kty=funcParams
+         ,            _Ty=int
+         ,            _Tr=stdext::hash_compare<funcParams,std::less<funcParams>>
+         ,            _Alloc=std::allocator<std::pair<const funcParams,int>>
+                 ]
+                 c:\program files (x86)\microsoft visual studio 12.0\vc\include\hash_map(86) : see reference to class template instantiation 'std::_Hash<stdext::_Hmap_traits<_Kty,_Ty,_Tr,_Alloc,false>>' being compiled
+                 with
+                 [
+                     _Kty=funcParams
+         ,            _Ty=int
+         ,            _Tr=stdext::hash_compare<funcParams,std::less<funcParams>>
+         ,            _Alloc=std::allocator<std::pair<const funcParams,int>>
+                 ]
+                 c:\users\sumit.dhyani\documents\visual studio 2013\projects\algoproblems\maximum_tip_calculator\maximum_tip_calculator.cpp(48) : see reference to class template instantiation 'stdext::hash_map<funcParams,int,stdext::hash_compare<_Kty,std::less<_Kty>>,std::allocator<std::pair<const _Kty,_Ty>>>' being compiled
+                 with
+                 [
+                     _Kty=funcParams
+         ,            _Ty=int
+                 ]
+     1>Done Building Project "C:\Users\sumit.dhyani\Documents\Visual Studio 2013\Projects\AlgoProblems\Maximum_Tip_Calculator\Maximum_Tip_Calculator.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:00.32

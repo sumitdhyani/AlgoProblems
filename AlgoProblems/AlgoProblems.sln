@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AlgoProblems", "AlgoProblems\AlgoProblems.vcxproj", "{CFDDC33A-5B58-4ACC-AB68-9BAC00F56978}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FindAnagrams", "Temp\Temp.vcxproj", "{CA99AA67-8162-4FF1-A1AB-A99EC0444801}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Maximum_Tip_Calculator", "Maximum_Tip_Calculator\Maximum_Tip_Calculator.vcxproj", "{2A1C3FDB-CE34-4CA0-93ED-C0929E975564}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Maximin_tip_2", "Maximin_ti_2\Maximin_ti_2.vcxproj", "{C2FF6426-0D15-428C-9D45-C9DFC87545D1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PositiveNegativePairs", "PositiveNegativePairs\PositiveNegativePairs.vcxproj", "{CE201585-5556-424B-8B77-BBEA0A0DC117}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BitStringProblem", "BitStringProblem\BitStringProblem.vcxproj", "{5C814AA1-6976-4B40-823A-ADF9B7650716}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MinAvgWaitingTime", "MinAvgWaitingTime\MinAvgWaitingTime.vcxproj", "{0D0AFC77-BF11-4234-9B63-C42E2E91D0BD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CFDDC33A-5B58-4ACC-AB68-9BAC00F56978}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CFDDC33A-5B58-4ACC-AB68-9BAC00F56978}.Debug|Win32.Build.0 = Debug|Win32
+		{CFDDC33A-5B58-4ACC-AB68-9BAC00F56978}.Release|Win32.ActiveCfg = Release|Win32
+		{CFDDC33A-5B58-4ACC-AB68-9BAC00F56978}.Release|Win32.Build.0 = Release|Win32
+		{CA99AA67-8162-4FF1-A1AB-A99EC0444801}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CA99AA67-8162-4FF1-A1AB-A99EC0444801}.Debug|Win32.Build.0 = Debug|Win32
+		{CA99AA67-8162-4FF1-A1AB-A99EC0444801}.Release|Win32.ActiveCfg = Release|Win32
+		{CA99AA67-8162-4FF1-A1AB-A99EC0444801}.Release|Win32.Build.0 = Release|Win32
+		{2A1C3FDB-CE34-4CA0-93ED-C0929E975564}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2A1C3FDB-CE34-4CA0-93ED-C0929E975564}.Debug|Win32.Build.0 = Debug|Win32
+		{2A1C3FDB-CE34-4CA0-93ED-C0929E975564}.Release|Win32.ActiveCfg = Release|Win32
+		{2A1C3FDB-CE34-4CA0-93ED-C0929E975564}.Release|Win32.Build.0 = Release|Win32
+		{C2FF6426-0D15-428C-9D45-C9DFC87545D1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C2FF6426-0D15-428C-9D45-C9DFC87545D1}.Debug|Win32.Build.0 = Debug|Win32
+		{C2FF6426-0D15-428C-9D45-C9DFC87545D1}.Release|Win32.ActiveCfg = Release|Win32
+		{C2FF6426-0D15-428C-9D45-C9DFC87545D1}.Release|Win32.Build.0 = Release|Win32
+		{CE201585-5556-424B-8B77-BBEA0A0DC117}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CE201585-5556-424B-8B77-BBEA0A0DC117}.Debug|Win32.Build.0 = Debug|Win32
+		{CE201585-5556-424B-8B77-BBEA0A0DC117}.Release|Win32.ActiveCfg = Release|Win32
+		{CE201585-5556-424B-8B77-BBEA0A0DC117}.Release|Win32.Build.0 = Release|Win32
+		{5C814AA1-6976-4B40-823A-ADF9B7650716}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5C814AA1-6976-4B40-823A-ADF9B7650716}.Debug|Win32.Build.0 = Debug|Win32
+		{5C814AA1-6976-4B40-823A-ADF9B7650716}.Release|Win32.ActiveCfg = Release|Win32
+		{5C814AA1-6976-4B40-823A-ADF9B7650716}.Release|Win32.Build.0 = Release|Win32
+		{0D0AFC77-BF11-4234-9B63-C42E2E91D0BD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0D0AFC77-BF11-4234-9B63-C42E2E91D0BD}.Debug|Win32.Build.0 = Debug|Win32
+		{0D0AFC77-BF11-4234-9B63-C42E2E91D0BD}.Release|Win32.ActiveCfg = Release|Win32
+		{0D0AFC77-BF11-4234-9B63-C42E2E91D0BD}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

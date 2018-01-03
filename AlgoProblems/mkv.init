@@ -1,0 +1,2 @@
+#set {MKVLOGSDIR} {/home/delhi_qa/mkv/18000/marketview/wrk/MOCK_MIFID2}
+	set    {MKVCOMPTYPE} 			{MEFF}
