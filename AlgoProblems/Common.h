@@ -6,6 +6,7 @@
 #include <iostream>	
 #include <fstream>
 #include <thread>
+#include <queue>
 
 #if !defined(UINT)
 typedef unsigned int UINT;
@@ -191,13 +192,17 @@ class SingleConsumer : public Thread
 				m_cv.wait(lk);
 
 			while (!isQueueEmpty())
-				onNewItem(pullItem());
+				storeLocally(pullItem());
+			lk.unlock();
+
+			processLocalQueueElements();
 		}
 	}
 
+	virtual void storeLocally(T item) = 0;
+	virtual void processLocalQueueElements() = 0;
 	virtual bool isQueueEmpty() = 0;
 	virtual T pullItem() = 0;
-	virtual void onNewItem(T item) = 0;
 public:
 	SingleConsumer(std::mutex& mutex, std::condition_variable& cv)
 		:m_mutex(mutex),
@@ -210,7 +215,7 @@ public:
 template <class T>
 class FifoQueueProducer : public SingleProducer < T >
 {
-	std::vector<T>& m_eventQueque;
+	std::queue<T>& m_eventQueque;
 	virtual bool isQueueEmpty()
 	{
 		return m_eventQueque.empty();
@@ -218,18 +223,18 @@ class FifoQueueProducer : public SingleProducer < T >
 
 	void pushItem(T queueItem)
 	{
-		m_eventQueque.push_back(queueItem);
+		m_eventQueque.push(queueItem);
 	}
 
 	virtual T pullItem()
 	{
-		T item = m_eventQueque.back();
-		m_eventQueque.pop_back();
+		T item = m_eventQueque.front();
+		m_eventQueque.pop();
 		return item;
 	}
 
 public:
-	FifoQueueProducer(std::vector<T>& queue, std::mutex& mutex, std::condition_variable& cv)
+	FifoQueueProducer(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv)
 		:SingleProducer < T >(mutex,cv),
 		m_eventQueque(queue)
 	{
@@ -239,26 +244,37 @@ public:
 template <class T>
 class FifoQueueConsumer : public SingleConsumer < T >
 {
-	std::vector<T>& m_eventQueque;
+	std::queue<T>& m_eventQueque;
+	std::queue<T> m_localEventQueque;
+	virtual void onNewItem(T item) = 0;
 	virtual bool isQueueEmpty()
 	{
 		return m_eventQueque.empty();
 	}
 
+	virtual void storeLocally(T item)
+	{
+		m_localEventQueque.push(item);
+	}
+
+	virtual void processLocalQueueElements()
+	{
+		while (!m_localEventQueque.empty())
+		{
+			onNewItem(m_localEventQueque.front());
+			m_localEventQueque.pop();
+		}
+	}
+
 	virtual T pullItem()
 	{
-		if (!m_eventQueque.empty())
-		{
-			T item = m_eventQueque.back();
-			m_eventQueque.pop_back();
-			return item;
-		}
-		else
-			throw std::runtime_error("The event queue is empty");
-
+		T item = m_eventQueque.front();
+		m_eventQueque.pop();
+		return item;
 	}
+
 public:
-	FifoQueueConsumer(std::vector<T>& queue, std::mutex& mutex, std::condition_variable& cv)
+	FifoQueueConsumer(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv)
 		:SingleConsumer < T >(mutex, cv),
 		m_eventQueque(queue)
 	{

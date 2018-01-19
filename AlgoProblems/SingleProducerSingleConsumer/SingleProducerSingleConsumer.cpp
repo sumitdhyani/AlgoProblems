@@ -33,7 +33,7 @@ class SampleFifoProducer : public FifoQueueProducer < int >
 		return i++;
 	}
 public:
-	SampleFifoProducer(std::vector<int>& queue, std::mutex& mutex, std::condition_variable& cv)
+	SampleFifoProducer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv)
 		:FifoQueueProducer < int >(queue, mutex, cv)
 	{
 	}
@@ -47,7 +47,7 @@ class SampleFifoConsumer : public FifoQueueConsumer < int >
 		std::cout << item << " Received in the consumer thread, ThreadId = " << std::to_string(std::this_thread::get_id().hash()) << std::endl;
 	}
 public:
-	SampleFifoConsumer(std::vector<int>& queue, std::mutex& mutex, std::condition_variable& cv) 
+	SampleFifoConsumer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) 
 		:FifoQueueConsumer<int>(queue, mutex, cv)
 	{
 	}
@@ -56,15 +56,15 @@ public:
 
 int main(int argc, char* argv[])
 {
-	std::vector<int> queue;
-	queue.push_back(1);
-	queue.push_back(1);
-	queue.push_back(1);
-	queue.push_back(1);
-	queue.push_back(1);
-	queue.push_back(1);
-	queue.push_back(1);
-	queue.push_back(1);
+	std::queue<int> queue;
+	queue.push(1);
+	queue.push(1);
+	queue.push(1);
+	queue.push(1);
+	queue.push(1);
+	queue.push(1);
+	queue.push(1);
+	queue.push(1);
 	std::mutex mutex;
 	std::condition_variable cv;
 	SampleFifoProducer p(queue,mutex,cv);
