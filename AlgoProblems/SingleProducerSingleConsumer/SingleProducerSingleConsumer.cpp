@@ -5,6 +5,8 @@
 #include <mutex>
 #include <condition_variable>
 #include "Common.h"
+#include <conio.h>
+#include <windows.h>
 
 class MyThread1 : public Thread
 {
@@ -46,17 +48,70 @@ class SampleFifoConsumer : public FifoQueueConsumer < int >
 	{
 		std::cout << item << " Received in the consumer thread, ThreadId = " << std::to_string(std::this_thread::get_id().hash()) << std::endl;
 	}
+	virtual void storeLocally(int item)
+	{
+
+	}
 public:
 	SampleFifoConsumer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) 
 		:FifoQueueConsumer<int>(queue, mutex, cv)
 	{
 	}
+
+
 };
 
 
+class SampleSharedFifoQueueTimer : public SharedFifoQueue < int >
+{
+	int m_num;
+	virtual int push()
+	{
+		Sleep(1000);
+		return ++m_num;
+	}
+
+	virtual void process(int item)
+	{
+		std::cout << std::endl<<item << " Received from producer";
+	}
+
+public:
+	SampleSharedFifoQueueTimer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) :
+		SharedFifoQueue < int >(queue, mutex, cv)
+	{
+		m_num = 0;
+	}
+};
+
+
+class SampleSharedFifoQueueThrottler : public SharedFifoQueue < int >
+{
+	int m_num;
+	int m_limit;
+	std::vector<int> m_localQueue;
+	virtual int push()
+	{
+		Sleep(10);
+		return ++m_num;
+	}
+
+	virtual void process(int item)
+	{
+		std::cout << std::endl << item << " Received from producer";
+	}
+
+public:
+	SampleSharedFifoQueueThrottler(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) :
+		SharedFifoQueue < int >(queue, mutex, cv)
+	{
+		m_num = 0;
+	}
+};
+
 int main(int argc, char* argv[])
 {
-	std::queue<int> queue;
+	/*
 	queue.push(1);
 	queue.push(1);
 	queue.push(1);
@@ -73,7 +128,14 @@ int main(int argc, char* argv[])
 	p.start();
 	c.start();
 	p->join();
-	c->join();
+	c->join();*/
+
+	std::queue<int> queue;
+	std::mutex mutex;
+	std::condition_variable cv;
+
+	SampleSharedFifoQueueTimer pc(queue, mutex, cv);
+	pc.start();
 
 	return 0;
 }

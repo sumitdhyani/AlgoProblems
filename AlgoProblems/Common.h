@@ -7,13 +7,14 @@
 #include <fstream>
 #include <thread>
 #include <queue>
+//#include <winnt.h>
 
 #if !defined(UINT)
 typedef unsigned int UINT;
 #endif
 
 #if !defined(INT)
-typedef long long int INT;
+typedef int INT;
 #endif
 
 
@@ -278,5 +279,80 @@ public:
 		:SingleConsumer < T >(mutex, cv),
 		m_eventQueque(queue)
 	{
+	}
+};
+
+
+
+
+template <class T>
+class SharedFifoQueue
+{
+	
+	class FifoQueueProducerShared : public FifoQueueProducer<T>
+	{
+		SharedFifoQueue<T>& m_fn;
+		virtual T getNextElement()
+		{
+			return m_fn.push();
+		}
+
+	public:
+		FifoQueueProducerShared(SharedFifoQueue<T>& fn, std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv) :
+			FifoQueueProducer<T>(queue, mutex, cv),
+			m_fn(fn)
+		{}
+
+	};
+
+	class FifoQueueConsumerShared : public FifoQueueConsumer<T>
+	{
+		SharedFifoQueue<T>& m_fn;
+
+		virtual void onNewItem(T item)
+		{
+			m_fn.process(item);
+		}
+
+	public:
+		FifoQueueConsumerShared(SharedFifoQueue<T>& fn, std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv) :
+			FifoQueueConsumer<T>(queue, mutex, cv),
+			m_fn(fn)
+		{}
+	};
+
+
+	std::queue<T>& m_eventQueue;
+	std::mutex& m_mutex;
+	std::condition_variable& m_cv;
+	FifoQueueProducerShared* m_producer;
+	FifoQueueConsumerShared* m_consumer;
+public:
+
+	virtual T push() = 0;
+	virtual void process(T item) = 0;
+
+	SharedFifoQueue(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv):
+		m_eventQueue(queue),
+		m_mutex(mutex),
+		m_cv(cv)
+	{
+		m_producer = new FifoQueueProducerShared(*this, m_eventQueue, m_mutex, m_cv);
+		m_consumer = new FifoQueueConsumerShared(*this, m_eventQueue, m_mutex, m_cv);
+	}
+
+	void start()
+	{
+		m_producer->start();
+		m_consumer->start();
+
+		(*m_producer)->join();
+		(*m_consumer)->join();
+	}
+
+	~SharedFifoQueue()
+	{
+		delete m_producer;
+		delete m_consumer;
 	}
 };
