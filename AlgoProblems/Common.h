@@ -162,11 +162,10 @@ class SingleProducer : public Thread
 		while (true)
 		{
 			std::unique_lock<std::mutex> lk(m_mutex);
-			bool consumerWaiting = false;
-			if (isQueueEmpty())
-				consumerWaiting = true;
+			bool consumerWaiting = isQueueEmpty();
 			pushItem(getNextElement());
-			if (consumerWaiting)
+			//The element returned by "getNextElement" be NULL since it returns boost::optional<T>, so the quequ could still be empty
+			if (consumerWaiting && !isQueueEmpty())
 			{
 				lk.unlock();
 				m_cv.notify_one();
@@ -207,10 +206,10 @@ class SingleConsumer : public Thread
 		}
 	}
 
-	virtual void storeLocally(boost::optional<T> item) = 0;
+	virtual void storeLocally(T item) = 0;
 	virtual void processLocalQueueElements() = 0;
 	virtual bool isQueueEmpty() = 0;
-	virtual boost::optional<T> pullItem() = 0;
+	virtual T pullItem() = 0;
 public:
 	SingleConsumer(std::mutex& mutex, std::condition_variable& cv)
 		:m_mutex(mutex),
@@ -224,7 +223,7 @@ public:
 template <class T>
 class FifoQueueProducer : public SingleProducer < T >
 {
-	std::queue<boost::optional<T>>& m_eventQueque;
+	std::queue<T>& m_eventQueque;
 	virtual bool isQueueEmpty()
 	{
 		return m_eventQueque.empty();
@@ -232,11 +231,12 @@ class FifoQueueProducer : public SingleProducer < T >
 
 	void pushItem(boost::optional<T> queueItem)
 	{
-		m_eventQueque.push(queueItem);
+		if (queueItem)
+			m_eventQueque.push(*queueItem);
 	}
 
 public:
-	FifoQueueProducer(std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv)
+	FifoQueueProducer(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv)
 		:SingleProducer < T >(mutex,cv),
 		m_eventQueque(queue)
 	{
@@ -247,7 +247,7 @@ public:
 template <class T>
 class FifoQueueConsumer : public SingleConsumer < T >
 {
-	std::queue<boost::optional<T>>& m_eventQueque;
+	std::queue<T>& m_eventQueque;
 	std::queue<T> m_localEventQueque;
 	virtual void onNewItem(T item) = 0;
 	virtual bool isQueueEmpty()
@@ -255,10 +255,9 @@ class FifoQueueConsumer : public SingleConsumer < T >
 		return m_eventQueque.empty();
 	}
 
-	virtual void storeLocally(boost::optional<T> item)
+	virtual void storeLocally(T item)
 	{
-		if (item)
-			m_localEventQueque.push(*item);
+		m_localEventQueque.push(item);
 	}
 
 	virtual void processLocalQueueElements()
@@ -270,15 +269,15 @@ class FifoQueueConsumer : public SingleConsumer < T >
 		}
 	}
 
-	virtual boost::optional<T> pullItem()
+	virtual T pullItem()
 	{
-		boost::optional<T> item = m_eventQueque.front();
+		T item = m_eventQueque.front();
 		m_eventQueque.pop();
 		return item;
 	}
 
 public:
-	FifoQueueConsumer(std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv)
+	FifoQueueConsumer(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv)
 		:SingleConsumer < T >(mutex, cv),
 		m_eventQueque(queue)
 	{
@@ -286,85 +285,6 @@ public:
 };
 
 
-
-
-//The container which synchronizes the events between producer and consumer
-//Inherit this class and override "push" and "process" methods
-//Call the start method
-template <class T>
-class SharedFifoQueue
-{
-	
-	class FifoQueueProducerShared : public FifoQueueProducer<T>
-	{
-		SharedFifoQueue<T>& m_fn;
-		virtual boost::optional<T> getNextElement()
-		{
-			return m_fn.push();
-		}
-
-	public:
-		FifoQueueProducerShared(SharedFifoQueue& fn, std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv) :
-			FifoQueueProducer<T>(queue, mutex, cv),
-			m_fn(fn)
-		{}
-
-	};
-
-	class FifoQueueConsumerShared : public FifoQueueConsumer<T>
-	{
-		SharedFifoQueue<T>& m_fn;
-
-		virtual void onNewItem(T item)
-		{
-			m_fn.process(item);
-		}
-
-	public:
-		FifoQueueConsumerShared(SharedFifoQueue& fn, std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv) :
-			FifoQueueConsumer<T>(queue, mutex, cv),
-			m_fn(fn)
-		{}
-	};
-
-
-	std::queue<boost::optional<T>>& m_eventQueue;
-	std::mutex& m_mutex;
-	std::condition_variable& m_cv;
-	FifoQueueProducerShared* m_producer;
-	FifoQueueConsumerShared* m_consumer;
-public:
-
-	//Do the prducer tasks here, this is called in producer thread, for example reading from a socket and sending the read data, downloading some data from internet etc
-	virtual T push() = 0;
-
-	//Callback received in consumer thread, do your processing in it without worrying about thread safety
-	virtual void process(T item) = 0;
-
-	SharedFifoQueue(std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv) :
-		m_eventQueue(queue),
-		m_mutex(mutex),
-		m_cv(cv)
-	{
-		m_producer = new FifoQueueProducerShared(*this, m_eventQueue, m_mutex, m_cv);
-		m_consumer = new FifoQueueConsumerShared(*this, m_eventQueue, m_mutex, m_cv);
-	}
-
-	void start()
-	{
-		m_producer->start();
-		m_consumer->start();
-
-		(*m_producer)->join();
-		(*m_consumer)->join();
-	}
-
-	~SharedFifoQueue()
-	{
-		delete m_producer;
-		delete m_consumer;
-	}
-};
 
 
 //Execute the predicate in producer thread
@@ -378,7 +298,7 @@ class FifoQueueProducerPredicate : public FifoQueueProducer < T >
 	}
 
 public:
-	FifoQueueProducerPredicate(std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv, std::function<boost::optional<T>()> fn)
+	FifoQueueProducerPredicate(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv, std::function<boost::optional<T>()> fn)
 		:FifoQueueProducer < T >(queue, mutex, cv),
 		m_fn(fn)
 	{
@@ -396,9 +316,8 @@ class FifoQueueConsumerPredicate : public FifoQueueConsumer < T >
 		m_fn(item);
 	}
 
-
 public:
-	FifoQueueConsumerPredicate(std::queue<boost::optional<int>>& queue, std::mutex& mutex, std::condition_variable& cv, std::function<void(T)> fn)
+	FifoQueueConsumerPredicate(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv, std::function<void(T)> fn)
 		:FifoQueueConsumer < T >(queue, mutex, cv),
 		m_fn(fn)
 	{

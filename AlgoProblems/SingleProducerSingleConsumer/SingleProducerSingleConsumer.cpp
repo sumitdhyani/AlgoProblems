@@ -7,6 +7,7 @@
 #include "Common.h"
 #include <conio.h>
 #include <windows.h>
+#include "SingleProducerSingleConsumer.h"
 
 class MyThread1 : public Thread
 {
@@ -28,7 +29,7 @@ class MyThread2 : public Thread
 
 class SampleFifoProducer : public FifoQueueProducer < int >
 {
-	virtual int getNextElement()
+	virtual boost::optional<int> getNextElement()
 	{
 		static int i = 0;
 		std::cout << i << " Pushed in producer thread, ThreadId = " << std::to_string(std::this_thread::get_id().hash()) << std::endl;
@@ -53,88 +54,34 @@ class SampleFifoConsumer : public FifoQueueConsumer < int >
 
 	}
 public:
-	SampleFifoConsumer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) 
+	SampleFifoConsumer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv)
 		:FifoQueueConsumer<int>(queue, mutex, cv)
 	{
 	}
-
-
 };
 
-
-class SampleSharedFifoQueueTimer : public SharedFifoQueue < int >
+boost::optional<int> push()
 {
-	int m_num;
-	virtual int push()
-	{
-		Sleep(1000);
-		return ++m_num;
-	}
+	static int i = 0;
+	Sleep(1000);
+	return ++i;
+}
 
-	virtual void process(int item)
-	{
-		std::cout << std::endl<<item << " Received from producer";
-	}
-
-public:
-	SampleSharedFifoQueueTimer(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) :
-		SharedFifoQueue < int >(queue, mutex, cv)
-	{
-		m_num = 0;
-	}
-};
-
-
-class SampleSharedFifoQueueThrottler : public SharedFifoQueue < int >
+void process(int item)
 {
-	int m_num;
-	int m_limit;
-	std::vector<int> m_localQueue;
-	virtual int push()
-	{
-		Sleep(10);
-		return ++m_num;
-	}
-
-	virtual void process(int item)
-	{
-		std::cout << std::endl << item << " Received from producer";
-	}
-
-public:
-	SampleSharedFifoQueueThrottler(std::queue<int>& queue, std::mutex& mutex, std::condition_variable& cv) :
-		SharedFifoQueue < int >(queue, mutex, cv)
-	{
-		m_num = 0;
-	}
-};
+	std::cout << std::endl << item << " Received from producer";
+}
 
 int main(int argc, char* argv[])
 {
-	/*
-	queue.push(1);
-	queue.push(1);
-	queue.push(1);
-	queue.push(1);
-	queue.push(1);
-	queue.push(1);
-	queue.push(1);
-	queue.push(1);
-	std::mutex mutex;
-	std::condition_variable cv;
-	SampleFifoProducer p(queue,mutex,cv);
-	SampleFifoConsumer c(queue, mutex, cv);
-
-	p.start();
-	c.start();
-	p->join();
-	c->join();*/
-
 	std::queue<int> queue;
 	std::mutex mutex;
 	std::condition_variable cv;
 
-	SampleSharedFifoQueueTimer pc(queue, mutex, cv);
+	/*SampleSharedFifoQueueTimer pc(queue, mutex, cv);
+	pc.start();*/
+
+	SingleProducerSingleConsumer<int> pc(queue, mutex, cv, std::function<boost::optional<int>()>(push), std::function<void(int)>(process));
 	pc.start();
 
 	return 0;
