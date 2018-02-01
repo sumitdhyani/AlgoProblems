@@ -11,10 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{33CE0A32-6C5E-4D05-B22E-D164C1C37DDE}</ProjectGuid>
+    <ProjectGuid>{B889E2C8-28C4-4F49-8934-DF9A98C259EC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>MultiProducerMultiConsumer</RootNamespace>
-    <ProjectName>MultiProducerSingleConsumer</ProjectName>
+    <RootNamespace>ForGenericTesting</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -53,7 +52,6 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../;D:\PATS_LOCAL\ESAThirdParty\Boost\1.58.0VC12 Build 072201\Release\include\boost-1_58\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -69,7 +67,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../;D:\PATS_LOCAL\ESAThirdParty\Boost\1.58.0VC12 Build 072201\Release\include\boost-1_58\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -82,10 +79,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MultiProducerMultiConsumer.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="MultiProducerSingleConsumer.h" />
+    <ClCompile Include="ForGenericTesting.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

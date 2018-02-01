@@ -18,12 +18,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MultiProducerSingleConsumer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="MultiProducerMultiConsumer.cpp">
+    <ClCompile Include="ForGenericTesting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

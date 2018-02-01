@@ -1,24 +1,25 @@
 #pragma once
 #include "Common.h"
-#include <boost/smart_ptr/shared_ptr.hpp>
 
 template <class T>
 class MultiProducerSingleConsumerVersion1
 {
+	std::shared_ptr<bool> m_consumerWaitingFlag;
 	std::vector<boost::shared_ptr<FifoQueueProducerPredicate<T>>> m_producers;
 	boost::shared_ptr<FifoQueueConsumerPredicate<T>> m_consumer;
 public:
-	MultiProducerSingleConsumerVersion1(std::queue<T>& queue,
-										std::mutex& mutex,
-										std::condition_variable& cv,
-										const std::vector<std::function<boost::optional<T>()>>& fn_producers,
+	MultiProducerSingleConsumerVersion1(std::shared_ptr<std::queue<T>> queue,
+										std::shared_ptr<std::mutex> mutex,
+										std::shared_ptr<std::condition_variable> cv,
+										const std::vector<std::function<T()>>& fn_producers,
 										std::function<void(T)> fn_consumer
 										)
+		 :m_consumerWaitingFlag(std::shared_ptr<bool>(new bool(true))),
 	{
 		for (auto item : fn_producers)
-			m_producers.push_back(boost::shared_ptr<FifoQueueProducerPredicate<T>>(new FifoQueueProducerPredicate<T>(queue, mutex, cv, item)));
+			m_producers.push_back(boost::shared_ptr<FifoQueueProducerPredicate<T>>(new FifoQueueProducerPredicate<T>(queue, mutex, cv, item, m_consumerWaitingFlag)));
 
-		m_consumer = boost::shared_ptr<FifoQueueConsumerPredicate<T>>(new FifoQueueConsumerPredicate<T>(queue, mutex, cv, fn_consumer));
+		m_consumer = boost::shared_ptr<FifoQueueConsumerPredicate<T>>(new FifoQueueConsumerPredicate<T>(queue, mutex, cv, fn_consumer, m_consumerWaitingFlag));
 	}
 
 

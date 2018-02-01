@@ -7,9 +7,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <ctime>
-//#include <boost/date_time/posix_time/posix_time.hpp>
-
-boost::optional<int> fn1()
+int fn1()
 {
 	static int i = 1;
 	while (true)
@@ -19,7 +17,7 @@ boost::optional<int> fn1()
 	}
 }
 
-boost::optional<int> fn2()
+int fn2()
 {
 	static int i = 2;
 	while (true)
@@ -29,7 +27,7 @@ boost::optional<int> fn2()
 	}
 }
 
-boost::optional<int> fn3()
+int fn3()
 {
 	static int i = 3;
 	while (true)
@@ -54,19 +52,17 @@ void fn4(int i)
 
 int main(int argc, char* argv[])
 {
-	std::queue<boost::optional<int>> queue;
-	std::mutex mutex;
-	std::condition_variable cv;
-	std::vector<std::function<boost::optional<int>()>> producerFunctions;
-	std::function<boost::optional<int>()> pfn1 = fn1;
-	std::function<boost::optional<int>()> pfn2 = fn2;
-	std::function<boost::optional<int>()> pfn3 = fn3;
+	std::shared_ptr<std::queue<int>> queue(new std::queue<int>);
+	std::shared_ptr<std::mutex> mutex(new std::mutex);
+	std::shared_ptr<std::condition_variable> cv(new std::condition_variable);
+	std::vector<std::function<int()>> producerFunctions;
 	producerFunctions.push_back(fn1);
 	producerFunctions.push_back(fn2);
 	producerFunctions.push_back(fn3);
 
 	MultiProducerSingleConsumerVersion1<int> pc(queue, mutex, cv, producerFunctions, fn4);
 	pc.start();
+	getch();
 	return 0;
 }
 

@@ -52,7 +52,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../;D:\PATS_LOCAL\ESAThirdParty\Boost\1.58.0VC12 Build 072201\Release\include\boost-1_58\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -68,6 +68,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../;D:\PATS_LOCAL\ESAThirdParty\Boost\1.58.0VC12 Build 072201\Release\include\boost-1_58\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -81,6 +82,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SingleProducerSingleConsumer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SingleProducerSingleConsumer.h" />
+    <ClInclude Include="TimedCaller.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

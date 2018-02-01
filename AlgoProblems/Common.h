@@ -8,10 +8,12 @@
 #include <thread>
 #include <queue>
 #include <functional>
+#include <chrono>
 #include <mutex>
+#include <memory>
 #include <condition_variable>
 #include <boost/optional/optional.hpp>
-
+#include <atomic>  
 
 #if !defined(UINT)
 typedef unsigned int UINT;
@@ -154,53 +156,83 @@ public:
 template <class T>
 class SingleProducer : public Thread
 {
-	std::mutex& m_mutex;
-	std::condition_variable& m_cv;
-
+	std::shared_ptr<std::unique_lock<std::mutex>> m_lock;
+	std::shared_ptr<std::condition_variable> m_cv;
+	const std::shared_ptr<bool> m_consumerWaitingFlag;
+	std::atomic<bool> m_exitThread;
+	virtual void preLockActions() {};
+	virtual void preUnlockActions() {};
 	virtual void run()
 	{
-		while (true)
+		while (!m_exitThread.load())
 		{
-			std::unique_lock<std::mutex> lk(m_mutex);
-			bool consumerWaiting = isQueueEmpty();
-			pushItem(getNextElement());
-			//The element returned by "getNextElement" be NULL since it returns boost::optional<T>, so the quequ could still be empty
-			if (consumerWaiting && !isQueueEmpty())
+			std::cout << m_exitThread.load() << std::endl;
+			T item = getNextElement();
+			preLockActions();
+			m_lock->lock();
+			pushItem(item);
+			preUnlockActions();
+			//m_consumerWaitingFlag is accessed by both producer(s) and consumer(s), so should be accessed within a critical section,
+			//hence this redundant and stupid looking "if"
+			if (*m_consumerWaitingFlag)
 			{
-				lk.unlock();
-				m_cv.notify_one();
+				m_lock->unlock();
+				m_cv->notify_all();
 			}
+			else
+				m_lock->unlock();
 		}
+		std::cout<<std::endl<<"Exiting"<<std::endl;
 	}
 
 	virtual bool isQueueEmpty() = 0;
-	virtual void pushItem(boost::optional<T> queueItem) = 0;
-	virtual boost::optional<T> getNextElement() = 0;
+	virtual void pushItem(T queueItem) = 0;
+	virtual T getNextElement() = 0;
 public:
-	SingleProducer(std::mutex& mutex, std::condition_variable& cv)
-		:m_mutex(mutex),
-		m_cv(cv)
+	SingleProducer(std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, const std::shared_ptr<bool> consumerWaitingFlag)
+		:m_lock(lock),
+		 m_cv(cv),
+		 m_consumerWaitingFlag(consumerWaitingFlag)
 	{
+		m_exitThread.store(false);
+	}
+
+	void exit()
+	{
+		m_exitThread.store(true);
+		//(*this)->join();
 	}
 };
+
+
 
 //Consumer class
 template <class T>
 class SingleConsumer : public Thread
 {
-	std::mutex& m_mutex;
-	std::condition_variable& m_cv;
+	std::shared_ptr<std::unique_lock<std::mutex>> m_lock;
+	std::shared_ptr<std::condition_variable> m_cv;
+	std::shared_ptr<bool> m_consumerWaitingFlag;
+	bool m_exitThread;
+	virtual void preLockActions() {};
+	virtual void preUnlockActions() {};
 	virtual void run()
 	{
-		while (true)
+		while (!m_exitThread)
 		{
-			std::unique_lock<std::mutex> lk(m_mutex);
+			preLockActions();
+			m_lock->lock();
 			if (isQueueEmpty())
-				m_cv.wait(lk);
+			{
+				*m_consumerWaitingFlag = true;
+				m_cv->wait(*m_lock);
+				*m_consumerWaitingFlag = false;
+			}
 
 			while (!isQueueEmpty())
 				storeLocally(pullItem());
-			lk.unlock();
+			preUnlockActions();
+			m_lock->unlock();
 
 			processLocalQueueElements();
 		}
@@ -211,10 +243,20 @@ class SingleConsumer : public Thread
 	virtual bool isQueueEmpty() = 0;
 	virtual T pullItem() = 0;
 public:
-	SingleConsumer(std::mutex& mutex, std::condition_variable& cv)
-		:m_mutex(mutex),
-		 m_cv(cv)
+	SingleConsumer(std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, std::shared_ptr<bool> consumerWaitingFlag)
+		:m_lock(lock),
+		 m_cv(cv),
+		 m_exitThread(false),
+		 m_consumerWaitingFlag(consumerWaitingFlag)
 	{
+		*m_consumerWaitingFlag = false;
+	}
+
+	void exit()
+	{
+		m_exitThread = true;
+		(*this)->join();
+
 	}
 };
 
@@ -223,36 +265,37 @@ public:
 template <class T>
 class FifoQueueProducer : public SingleProducer < T >
 {
-	std::queue<T>& m_eventQueque;
+	std::shared_ptr<std::queue<T>> m_eventQueque;
 	virtual bool isQueueEmpty()
 	{
-		return m_eventQueque.empty();
+		return m_eventQueque->empty();
 	}
 
-	void pushItem(boost::optional<T> queueItem)
+	void pushItem(T queueItem)
 	{
-		if (queueItem)
-			m_eventQueque.push(*queueItem);
+		m_eventQueque->push(queueItem);
 	}
 
 public:
-	FifoQueueProducer(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv)
-		:SingleProducer < T >(mutex,cv),
-		m_eventQueque(queue)
+	FifoQueueProducer(std::shared_ptr<std::queue<T>> queue, std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, const std::shared_ptr<bool> consumerWaitingFlag)
+		:SingleProducer < T >(lock,cv, consumerWaitingFlag),
+		 m_eventQueque(queue)
 	{
 	}
 };
+
+
 
 //Consumer which pulls elements in the shared queue in fifo fashion
 template <class T>
 class FifoQueueConsumer : public SingleConsumer < T >
 {
-	std::queue<T>& m_eventQueque;
+	std::shared_ptr<std::queue<T>> m_eventQueque;
 	std::queue<T> m_localEventQueque;
 	virtual void onNewItem(T item) = 0;
 	virtual bool isQueueEmpty()
 	{
-		return m_eventQueque.empty();
+		return m_eventQueque->empty();
 	}
 
 	virtual void storeLocally(T item)
@@ -271,15 +314,15 @@ class FifoQueueConsumer : public SingleConsumer < T >
 
 	virtual T pullItem()
 	{
-		T item = m_eventQueque.front();
-		m_eventQueque.pop();
+		T item = m_eventQueque->front();
+		m_eventQueque->pop();
 		return item;
 	}
 
 public:
-	FifoQueueConsumer(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv)
-		:SingleConsumer < T >(mutex, cv),
-		m_eventQueque(queue)
+	FifoQueueConsumer(std::shared_ptr<std::queue<T>> queue, std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, std::shared_ptr<bool> consumerWaitingFlag)
+		:SingleConsumer < T >(lock, cv, consumerWaitingFlag),
+		 m_eventQueque(queue)
 	{
 	}
 };
@@ -291,16 +334,16 @@ public:
 template <class T>
 class FifoQueueProducerPredicate : public FifoQueueProducer < T >
 {
-	std::function<boost::optional<T>()> m_fn;
-	virtual boost::optional<T> getNextElement()
+	std::function<T()> m_fn;
+	virtual T getNextElement()
 	{
-		return boost::optional<T>(m_fn());
+		return m_fn();
 	}
 
 public:
-	FifoQueueProducerPredicate(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv, std::function<boost::optional<T>()> fn)
-		:FifoQueueProducer < T >(queue, mutex, cv),
-		m_fn(fn)
+	FifoQueueProducerPredicate(std::shared_ptr<std::queue<T>> queue, std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, std::function<T()> fn, const std::shared_ptr<bool> consumerWaitingFlag)
+		:FifoQueueProducer < T >(queue, lock, cv, consumerWaitingFlag),
+		 m_fn(fn)
 	{
 	}
 };
@@ -317,9 +360,62 @@ class FifoQueueConsumerPredicate : public FifoQueueConsumer < T >
 	}
 
 public:
-	FifoQueueConsumerPredicate(std::queue<T>& queue, std::mutex& mutex, std::condition_variable& cv, std::function<void(T)> fn)
-		:FifoQueueConsumer < T >(queue, mutex, cv),
-		m_fn(fn)
+	FifoQueueConsumerPredicate(std::shared_ptr<std::queue<T>> queue, std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, std::function<void(T)> fn, std::shared_ptr<bool> consumerWaitingFlag)
+		:FifoQueueConsumer < T >(queue, lock, cv, consumerWaitingFlag),
+		 m_fn(fn)
 	{
 	}
 };
+
+
+template <class T>
+class FifoDelayedCaller : public FifoQueueProducerPredicate<T>
+{
+	UINT m_delay;
+	virtual void preLockActions()
+	{
+		if (0 < m_delay)
+			std::this_thread::sleep_for(std::chrono::milliseconds(m_delay));
+	}
+public:
+	FifoDelayedCaller(std::shared_ptr<std::queue<T>> queue, std::shared_ptr<std::unique_lock<std::mutex>> lock, std::shared_ptr<std::condition_variable> cv, std::function<T()> fn, UINT delay, std::shared_ptr<bool> consumerWaitingFlag)
+		:FifoQueueProducerPredicate<T>(queue, lock, cv, fn, consumerWaitingFlag),
+		 m_delay(delay)
+	{}
+};
+
+// For timer utilities
+template <class T>
+class returnSameThing
+{
+	T m_object;
+
+public:
+	T operator()()
+	{
+		return m_object;
+	}
+
+	returnSameThing(T object) :
+		m_object(object)
+	{
+	}
+
+	const T& operator=(const returnSameThing& object)
+	{
+		m_object = object.m_object;
+		return m_object;
+	}
+
+	const T& operator=(const T& object)
+	{
+		m_object = object.m_object;
+		return m_object;
+	}
+};
+
+template<typename T>
+void callItAsAFunction(T obj)
+{
+	obj();
+}

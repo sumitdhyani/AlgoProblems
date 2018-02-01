@@ -5,44 +5,48 @@
 template <class T>
 class MultiProducerSingleConsumerVersion1
 {
-	std::queue<boost::optional<int>>& m_eventQueue;
-	std::mutex& m_mutex;
-	std::condition_variable& m_cv;
-	std::vector<std::function<boost::optional<T>()>> m_fn_producers;
-	std::function<void(T)> m_fn_consumer;
-	std::vector<boost::shared_ptr<FifoQueueProducerPredicate<T>>> m_producers;
-	boost::shared_ptr<FifoQueueConsumerPredicate<T>> m_consumer;
+	std::shared_ptr<bool> m_consumerWaitingFlag;
+	std::vector<std::shared_ptr<FifoQueueProducerPredicate<T>>> m_producers;
+	std::shared_ptr<FifoQueueConsumerPredicate<T>> m_consumer;
+	std::shared_ptr<std::mutex> m_mutex;
+	std::shared_ptr<std::condition_variable> m_cv;
 public:
-	MultiProducerSingleConsumerVersion1(std::queue<boost::optional<int>>& queue,
-										std::mutex& mutex,
-										std::condition_variable& cv,
-										const std::vector<std::function<boost::optional<T>()>>& fn_producers,
+	MultiProducerSingleConsumerVersion1(std::shared_ptr<std::queue<T>> queue,
+										std::shared_ptr<std::mutex> mutex,
+										std::shared_ptr<std::condition_variable> cv,
+										const std::vector<std::function<T()>>& fn_producers,
 										std::function<void(T)> fn_consumer
-										):
-										m_eventQueue(queue),
-										m_mutex(mutex),
-										m_cv(cv),
-										m_fn_producers(fn_producers),
-										m_fn_consumer(fn_consumer)
+										)
+										:m_consumerWaitingFlag(std::shared_ptr<bool>(new bool(true)))
 	{
+		m_mutex = mutex;
+		m_cv = cv;
+		for (auto item : fn_producers)
+			m_producers.push_back(std::shared_ptr<FifoQueueProducerPredicate<T>>(new FifoQueueProducerPredicate<T>(queue, std::shared_ptr<std::unique_lock<std::mutex>>(new std::unique_lock<std::mutex>(*mutex, std::defer_lock)), cv, item, m_consumerWaitingFlag)));
+
+		m_consumer = std::shared_ptr<FifoQueueConsumerPredicate<T>>(new FifoQueueConsumerPredicate<T>(queue, std::shared_ptr<std::unique_lock<std::mutex>>(new std::unique_lock<std::mutex>(*mutex, std::defer_lock)), cv, fn_consumer, m_consumerWaitingFlag));
 	}
 
 
 	void start()
 	{
-		for (auto item : m_fn_producers)
-		{
-			FifoQueueProducerPredicate<T>* producerThread = new FifoQueueProducerPredicate<T>(m_eventQueue, m_mutex, m_cv, item);
-			producerThread->start();
-			m_producers.push_back(boost::shared_ptr<FifoQueueProducerPredicate<T>>(producerThread));
-		}
+		for (auto thread : m_producers)
+			thread->start();
 
-		m_consumer = boost::shared_ptr<FifoQueueConsumerPredicate<T>>(new FifoQueueConsumerPredicate<T>(m_eventQueue, m_mutex, m_cv, m_fn_consumer));
 		m_consumer->start();
+	}
+
+	~MultiProducerSingleConsumerVersion1()
+	{
+		for (auto thread : m_producers)
+			thread->exit();
+		m_cv->notify_all();
+
+		m_consumer->exit();
 
 		for (auto thread : m_producers)
 			(*thread)->join();
-
 		(*m_consumer)->join();
+
 	}
 };
